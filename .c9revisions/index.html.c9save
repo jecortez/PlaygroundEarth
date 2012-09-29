@@ -1,0 +1,2 @@
+{"ts":1348880545343,"silentsave":true,"restoring":false,"patch":[[]],"length":0}
+{"contributors":[],"silentsave":false,"ts":1348880748654,"patch":[[{"diffs":[[1,"<div id=\"header\">\nNothing here yet.\n</div>\n\n<div id=\"googleEarthWindow\">\n    This is where the main google earth window will go\n</div>\n\n<div id=\"minimap\">\nMinimap in here.\n</div>\n\n<div id=\"chatWindow\">\nChatwindow here\n</div>\n\n<div id=\"options\">\nOptions here\n</div>\n    \n    "]],"start1":0,"start2":0,"length1":0,"length2":274}]],"length":274,"saved":false}
