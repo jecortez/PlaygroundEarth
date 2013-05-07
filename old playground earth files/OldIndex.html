@@ -1,0 +1,604 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link href="/Content/Site.css" rel="stylesheet" type="text/css" />
+    <link href="/Content/jquery-ui-1.8.18.custom.css" rel="stylesheet" type="text/css" />
+    <script src="/Scripts/jquery-1.7.1.min.js" type="text/javascript"></script>
+    <script src="/Scripts/jquery-ui-1.8.18.custom.min.js" type="text/javascript"></script>
+
+    <!--<script src="http://code.jquery.com/jquery-1.7.2.min.js" type="text/javascript"></script>-->
+
+</head>
+<body>
+    <div class="page">
+        <header>
+            <div id="title">
+                <h1>Playground Earth</h1>
+            </div>
+            <div id="logindisplay">
+                    [ <a href="/Account/LogOn">Log On</a> ]
+
+            </div>
+            <nav>
+                <ul id="menu">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/Home/About">About</a></li>
+                </ul>
+            </nav>
+        </header>
+        <section id="main">
+            <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN""http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <!--
+Copyright 2008 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+    <title>Simple First Person Camera</title>
+    <!--
+  TODO- stylesheet for Game page
+  <link rel=stylesheet href='firstpersoncam.css' type='text/css' />-->
+    <!-- *** Replace the key below below with your own API key, available at http://code.google.com/apis/maps/signup.html *** -->
+    <script src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="../../Scripts/libs/math3d.js"></script>
+    <script type="text/javascript" src="../../Scripts/libs/keyboard-focus-hack.js"></script>
+    
+    <script type="text/javascript" src="../../Scripts/controlScripts/firstpersoncam.js"></script>
+    <script type="text/javascript" src="../../Scripts/dataScripts/globals.js"></script>
+    <script type="text/javascript" src="../../Scripts/dataScripts/updateLogic.js"></script>
+    <script type="text/javascript" src="../../Scripts/datascripts/helperFunctions.js"></script>
+    <script type="text/javascript" src="../../Scripts/datascripts/CommandFunctions.js"></script>
+    <script type="text/javascript" src="../../Scripts/timingScripts/Timer.js"></script>
+    <!--<script type="text/javascript" src="../../Scripts/jquery-ui-1.8.11.js"></script>-->
+    <script type="text/javascript">
+        var lastJson;
+        var playerPos;
+        var playerName = "testPlayerName"; //forNow
+        var playerList = [];
+        var commandList = [];
+        var testPlaya;
+        var racesList = [];
+        var directionsService;
+        /*
+        var MAN_MODEL_LOCATION = "/Content/Models/man_model.dae";
+        var BEACON_LOCATION = "/Content/Models/beacon.dae";
+        var PLANE_MODEL_LOCATION = "/Content/Models/sketchup_plane.dae";
+        var CAR_MODEL_LOCATION = "/Content/Models/car_color.dae";
+        var PLAYER_ARROW_LOCATION = "/Content/images/player_arrow.png";
+
+        */
+        var playerList;
+        var racesList;
+        var HTMLRacesList;
+        var commandList;
+        var tagGamesList;
+        var myGuid = "630632e4-4fd6-44a9-8ca0-aeece07e4a45";
+        var timerKey;
+        var timerReturnKey;
+        var timerInfoArea;
+        var timerReturnArea;
+        var avgTimerInfo = 1.0;
+        var timerReturnNumber = 0.0;
+        var timerInfoNumber = 0.0;
+        var avgTimerReturn = 1.0;
+        var timerReturnResults;
+
+        function createReturnPlayer() {
+            var playerPos = { "pos0": me.characterLla[0], "pos1": me.characterLla[1], "pos2": me.characterLla[2] };
+            var retPlayer = { "ID": "630632e4-4fd6-44a9-8ca0-aeece07e4a45", "name": "630632e4-4fd6-44a9-8ca0-aeece07e4a45", "heading": me.headingAngle, "pos": playerPos, "modelLocation": myModel };
+            return retPlayer;
+        }
+
+        function updateTimerResults() {
+            var newDiff = getTimeDiffAndUpdate(timerKey);
+            timerInfoNumber = timerInfoNumber + 1;
+            avgTimerInfo = (avgTimerInfo * (timerInfoNumber - 1.0) + newDiff) / timerInfoNumber;
+            if (isNaN(avgTimerInfo))
+                avgTimerInfo = 1;
+
+            //timerInfoArea.innerHTML = "AVG: " + avgTimerInfo + "current: " + newDiff;
+        }
+        function updateTimerReturnResults() {
+            var newDiff = getTimeDiffAndUpdate(timerReturnKey);
+            timerReturnNumber = timerReturnNumber + 1;
+            avgTimerReturn = (avgTimerInfo * (timerReturnNumber - 1.0) + newDiff) / timerReturnNumber;
+            if (isNaN(avgTimerInfo))
+                avgTimerReturn = 1;
+
+            //timerReturnArea.innerHTML = "AVG: " + avgTimerReturn + "current: " + newDiff;
+        }
+        var otherPlayerRefreshTimer = 0;
+        function pollForGameUpdate() {
+            var cPlayer = createReturnPlayer();
+            updateTimerResults();
+
+            $.ajax({
+                type: "POST",
+                url: '/Home/GameUpdate',
+                data: { clientPlayerString: JSON.stringify(cPlayer) },
+                traditional: true,
+                success: function (data) {
+                    //Here should parse the information into things thatt the game can use, create JS
+                    //representations of other players, update the relevant datastructures, and then
+                    //call itself
+                    updateTimerReturnResults();
+                    if (DEBUG) getElementById("updateJSONarea").innerHTML = data;
+                    var inputJSON = JSON.parse(data);
+                    playerList = inputJSON.players;
+                    racesList = inputJSON.currentRaces;
+                    HTMLRacesList = inputJSON.currentHTMLRaces;
+                    commandList = commandList.concat(inputJSON.commands);
+                    tagGamesList = inputJSON.currentTagGames;
+                    if(DEBUG) document.getElementById("AllData").innerHTML = "ALLDATA \n\r" + JSON.stringify(tagGamesList);
+
+                    if (DEBUG) {
+                        document.getElementById("AllData").innerHTML = "ALLDATA \n\r" + data;
+                        document.getElementById("CurrentPlayersData").innerHTML = JSON.stringify(playerList);
+                        document.getElementById("CurrentRacesData").innerHTML = JSON.stringify(racesList);
+                    }
+                    if (otherPlayerRefreshTimer > OTHER_PLAYER_REFRESH_RATE) {
+                        otherPlayerRefreshTimer = 0;
+                        if (playerList.length > 0) {
+                            drawOtherPlayers();
+                        }
+                        if (racesList.length > 0) {
+                            drawBeacons();
+                            lastRacesList = racesList;
+                        }
+                    }
+                    else {
+                        otherPlayerRefreshTimer++;
+                    }
+                    parseCommands();
+
+                    pollForGameUpdate();
+                },
+                fail: function () {
+                    pollForGameUpdate();
+                }
+            });
+        }
+    </script>
+    <script type="text/javascript">
+        google.load("earth", "1");
+        google.load("maps", "2");
+
+        var ge = null;
+        var directionsService;
+        var cam;
+        var myGUID;
+        function init() {
+            //MAN_MODEL_LOCATION = DIRECTORY+'/Content/Models/Character/Man/man_model.dae';
+            $("#tabs").tabs();
+            initialize();
+            init3D();
+            myGUID = "630632e4-4fd6-44a9-8ca0-aeece07e4a45";
+            directionsService = new google.maps.DirectionsService();
+        }
+
+
+        function beginUpdateLoop() {
+            gameUpdate();
+            var t = setTimeout("beginUpdateLoop()", REFRESH_RATE);
+            checkWhileAuto();
+        }
+
+
+
+        var road_check_counter = 0;
+        function checkWhileAuto() {
+            if (AUTO_TRANSPORT) {
+                road_check_counter++;
+                if (road_check_counter >= ROAD_CHECK_RATE) {
+                    roadCheck = checkRoadStatus();
+                    road_check_counter = 0;
+                }
+
+            }
+        }
+
+        var distToRoad;
+        //This function will check if you are close to a road, and if you are, change your travel mode.
+        function checkRoadStatus() {
+            //CALL TO GET NEAREST ROAD LOCATION
+            var currentLatLng = new google.maps.LatLng(me.characterLla[0], me.characterLla[1]);
+            //this sets the hidden html element, next we need to grab it out
+            if (TRAVEL_MODE == MODE_FLYING) {
+                // Have to do a special check to see if should land or not.
+            }
+            else {
+
+                distToRoad = getNearestRoad(me.characterLla[0], me.characterLla[1]);
+            }
+        }
+
+
+        //cannot simply return the value, so it just sets the dist in a hidden html ele
+        //sets nearestRoadDist to the distance value
+        //sets nearestRoadAddress
+        function getNearestRoad(myLat, myLng) {
+            document.getElementById('currentLat').value = myLat;
+            document.getElementById('currentLng').value = myLng;
+
+            var latlngCur = new google.maps.LatLng(myLat, myLng);
+            //DirectionsService
+            var request = {
+                origin: latlngCur,
+                destination: latlngCur,
+                travelMode: google.maps.DirectionsTravelMode.DRIVING
+            };
+            var directionsResult;
+            directionsService.route(request, function (response, status) {
+                if (status == google.maps.DirectionsStatus.OK) {
+                    directionsResult = response;
+                    var latlngCur = new google.maps.LatLng(document.getElementById('currentLat').value, document.getElementById('currentLng').value);
+                    var nearestRoadAddress = directionsResult.routes[0].legs[0].start_address;
+                    if (nearestRoadAddress.indexOf("(") != -1) {
+                        //contains a paren, on an airport.
+                        setTravelMode(MODE_FLYING);
+                        return;
+                    }
+                    document.getElementById('nearestRoadAddress').value = nearestRoadAddress;
+                    var retDist = google.maps.geometry.spherical.computeDistanceBetween(directionsResult.routes[0].legs[0].start_location, latlngCur);
+                    document.getElementById('nearestRoadDist').value = retDist;
+                    if (retDist <= DISTANCE_TO_ROAD_THRESHOLD) {
+                        //you must be on a road
+                        setTravelMode(MODE_DRIVING);
+
+                    }
+                    if (retDist > DISTANCE_TO_ROAD_THRESHOLD) {
+                        //you are NOT on a road:
+                        setTravelMode(MODE_WALKING);
+
+                    }
+                    return retDist;
+                }
+            });
+        }
+        function initCB(object) {
+            ge = object;
+
+            //WalkingSpeed
+            ge.getOptions().setFlyToSpeed(100);
+
+            ge.getLayerRoot().enableLayerById(ge.LAYER_BUILDINGS, true);
+            ge.getLayerRoot().enableLayerById(ge.LAYER_ROADS, true);
+
+            cam = new FirstPersonCam();
+            cam.updateCamera();
+            ge.getWindow().setVisibility(true);
+
+            keyboardFocusHack(ge);
+            beginUpdateLoop();
+
+            //prob should pull these into new method
+            timerReturnKey = "return" + myGUID;
+            timerKey = "timer" + myGUID;
+            timerInfoArea = document.getElementById("timerInfoArea"); 
+            timerReturnArea = document.getElementById("timerReturnInfoArea");
+
+            pollForGameUpdate();
+        }
+
+        function failureCB(object) {
+            /***
+            * This function will be called if plugin fails to load, in case
+            * you need to handle that error condition.
+            ***/
+        }
+
+        function init3D() {
+            google.earth.createInstance("map3d", initCB, failureCB);
+        }
+
+
+        window.onbeforeunload = function () {
+            // Make synchronous AJAX call #1
+            // Make synchronous AJAX call #2
+            $.ajax({
+                type: "POST",
+                url: '/Home/WindowClose',
+                data: { playerID: "630632e4-4fd6-44a9-8ca0-aeece07e4a45" },
+                traditional: true,
+                success: function (data) {
+
+                }
+            });
+            alert("Goodbye! Thanks for playing 630632e4-4fd6-44a9-8ca0-aeece07e4a45!");
+        };
+
+        function createNewTagGame() {
+            var gameName = document.getElementById("tagGameName").value;
+            var gameStartObj = {
+                createrID: myGUID,
+                name: gameName
+            }
+            $.ajax({
+                type: "POST",
+                url: '/Home/createTagGame',
+                data: { clientTagGameStart: JSON.stringify(gameStartObj) },
+                traditional: true,
+                success: function (data) {
+                    alert("just created tag game: " + data);
+                }
+            });
+        }
+
+        function getTagGameOptions() {
+            $.ajax({
+                    type: "GET",
+                    url: '/Home/getCurrentTagGames',
+                    traditional: true,
+                    success: function (data) {
+                        document.getElementById("tagGameSelect").innerHTML = data;
+                    }
+                });
+        }
+
+        function quitTagGame() {
+            var cmd = {
+                gameID: document.getElementById("quitGameId").value,
+                pid: myGUID,
+                action: "quit"
+            }
+            $.ajax({
+                    type: "POST",
+                    url: '/Home/sendTagGameCmd',
+                    data: { tagGameCmd: JSON.stringify(cmd) },
+                    traditional: true,
+                    success: function (data) {
+                        alert(data);
+                    }
+                });
+        }
+
+        function joinTagGame() {
+            var cmd = {
+                gameID: document.getElementById("tagGameSelect").value,
+                pid: myGUID,
+                action: "join"
+            }
+            $.ajax({
+                    type: "POST",
+                    url: '/Home/sendTagGameCmd',
+                    data: { tagGameCmd: JSON.stringify(cmd) },
+                    traditional: true,
+                    success: function (data) {
+                        alert(data);
+                    }
+                });
+        }
+
+        function distCheck(position1, position2, epsilon) {
+            var dist0 = position1[0] - position2[0];
+            var dist1 = position1[1] - position2[1];
+            var dist2 = position1[2] - position2[2];
+            if(Math.abs(dist0) < epsilon.pos0) {
+                if(Math.abs(dist1) < epsilon.pos1) {
+                    if(Math.abs(dist2) < epsilon.pos2) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        var tagEps = {
+            pos0: .0001, 
+            pos1: .0001, 
+            pos2: .01
+        };
+        function tag() {
+            //start cooldown?
+            //first we go over each tag game and check positions
+            //store pos at time of call
+            var myPos = me.characterLla;
+            var tagGame;
+            for (var i = 0; i < tagGamesList.length; i++) {
+                tagGame = tagGamesList[i];
+                if(distCheck([tagGame.itPos.pos0,tagGame.itPos.pos1,tagGame.itPos.pos2], myPos, tagEps)) {
+                    //we have a sucsessful tag
+                    var cmd = {
+                        gameID: tagGame.gameID,
+                        pid: myGUID,
+                        action: "tag"
+                    }
+                    $.ajax({
+                    type: "POST",
+                    url: '/Home/sendTagGameCmd',
+                    data: { tagGameCmd: JSON.stringify(cmd) },
+                    traditional: true,
+                    success: function (data) {
+                        alert(data);
+                    }
+                });
+                }
+            }
+        }
+    </script>
+</head>
+<body onload='init()' onunload="GUnload()" onkeydown="return keyDown(event);" onkeyup="return keyUp(event);"
+    id='body'>
+    <!-- Removing to look better.
+  <p id="PlayerName" >630632e4-4fd6-44a9-8ca0-aeece07e4a45</p>
+  <p id="PlayerID">630632e4-4fd6-44a9-8ca0-aeece07e4a45</p>
+  -->
+    <input type="hidden" id="nearestRoadDist" value="0" />
+    <input type="hidden" id="nearestRoadAddress" value="" />
+    <input type="hidden" id="currentLat" />
+    <input type="hidden" id="currentLng" value="0" />
+    <p id="debug"></p>
+    
+    <table width="100%" height="248" border="1">
+     <div id='map3d' style="width: 100%; height: 500px">
+    </div>
+      <tr>
+        <td width="33%" height="27%">
+         <div id="map_canvas" style="width: 100%; height: 100%" ></div>
+                <!--MAP STUFF STARTS HERE-->
+                <script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?sensor=false"> </script>
+                <script type="text/javascript" src="../../Scripts/dataScripts/globals.js"></script>
+                <script type="text/javascript" src="../../Scripts/dataScripts/minimap.js"></script>
+                <script type="text/javascript" src="../../Scripts/libs/elabel.js"></script>
+                <script type="text/javascript" src="../../Scripts/libs/richmarker.js"></script>
+        </td>
+        <td width="33%" height="100%">
+         <iframe width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0"
+        marginwidth="0" allowtransparency="true" src="http://chatroll.com/embed/chat/googleearthgame?id=tgfS23Tao7U&platform=html&w=$0">
+     </iframe>
+       </td>
+        <td width="33%" height="100%">
+
+<div id="tabs" style="height:100%">
+	<ul>
+		<li><a href="#tabs-1">Player List</a></li>
+        
+	</ul>
+	<div id="tabs-1">
+		 <table style="width: 100%; height: 100%">
+         <tr>
+          <input type="text" id="newNameTextBox" />
+         <button onclick="sendNameCommand()" >Change Name
+        <script type="text/javascript">
+            function sendNameCommand() {
+                var nName = document.getElementById("newNameTextBox").value;
+                var jsonData = { name: "NameChange", pid: myGUID, newName: nName };
+                $.ajax({
+                    type: "POST",
+                    url: "/Home/registerNameChange",
+                    data: { nameChangeCmdStr: JSON.stringify(jsonData) },
+                    traditional: true,
+                    success: function (data) {
+                        if (DEBUG) alert("changed name registered!");
+                    }
+                });
+            }
+        </script>
+    </button></tr>
+
+                    <tr>
+
+                        
+                        <td>
+                            Players
+                            <select style="width: 100%" size="5" id="playersSelect">
+                            </select>
+                            <br />
+                        </td>
+                    </tr>
+                    <tr>
+                        <button style="width: 100%" onclick="getRacesInfo()">
+                            Refresh Players</button></tr>
+
+                            <tr>
+                        <button style="width: 100%" onclick="teleportToPlayer()">
+                            Teleport To Player</button>
+                            <script type="text/javascript">
+                                function teleportToPlayer() {
+                                    //First gonna get the currently selected player.
+                                    var select = document.getElementById("playersSelect");
+                                    var i = 0;
+                                    for (i; i < select.options.length; i++) {
+                                        if (select.options[i].selected) {
+                                            //teleport to this player
+                                            var chosenPlayer = findPlayerByName(select.options[i].value);
+                                            if (chosenPlayer == -1) {
+                                                //Player not found, just chill.
+                                            } else {
+                                                var telecommand = { "name": "Teleport", "Position": { "pos0": chosenPlayer.pos.pos0, "pos1": chosenPlayer.pos.pos1, "pos2": chosenPlayer.pos.pos2} };
+                                                commandList.push(telecommand);
+                                            }
+                                        }
+                                    }
+                                }
+                                function findPlayerByName(guid) {
+                                    var i = 0;
+                                    for (i; i < playerList.length; i++) {
+                                        if (playerList[i].ID == guid) {
+                                            return playerList[i];
+                                        }
+                                    }
+                                    return -1;
+
+                                }
+                            
+                            </script></tr>
+                           
+    
+                </table>
+
+    </div>
+</div><!-- End demo -->
+     
+    </table>
+   
+                    <input id="consoleInput" />
+    <button name="consoleSendBtn" onclick="consoleSendClicked()">
+        Map Search
+        <script type="text/javascript">
+            var consoleInput;
+            var consoleValue;
+            var ID;
+            function consoleSendClicked() {
+                consoleInput = document.getElementById("consoleInput");
+                consoleValue = consoleInput.value;
+                codeAddress(consoleValue);
+                //FOR NOW, just using as a goto box
+                /*
+                //Sending an AJAX request.
+                if (DEBUG) alert("Sending ajax request");
+                consoleInput = document.getElementById("consoleInput");
+                consoleValue = consoleInput.value;
+                name = document.getElementById("PlayerID").innerHTML;
+                if (DEBUG) alert(consoleValue);
+                $.ajax({
+                type: "POST",   
+                url: '/Home/SendConsoleCommand',
+                data: { command: consoleValue, ID: name },
+                traditional: true,
+                success: function (data) {
+                if (DEBUG) alert("winrar");
+                }
+                });
+                if (DEBUG) alert("finished ajax section");
+                */
+            }
+        </script>
+    </button>
+    <p>
+    <script type="text/javascript"><!--
+        google_ad_client = "ca-pub-5317982761590578";
+        /* PlaygroundEarth */
+        google_ad_slot = "4307997399";
+        google_ad_width = 728;
+        google_ad_height = 90;
+//-->
+</script>
+<script type="text/javascript"
+src="http://pagead2.googlesyndication.com/pagead/show_ads.js">
+</script>
+</p>
+</body>
+</html>
+
+        </section>
+        <footer>
+        </footer>
+    </div>
+</body>
+</html>
