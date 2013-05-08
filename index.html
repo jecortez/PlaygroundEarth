@@ -1,21 +1,54 @@
-<div id="header">
-Nothing here yet.
-</div>
+<head>
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript" src="js/firstPersonCam.js"></script>
+	<script type="text/javascript" src="js/globals.js"></script>
+	<script type="text/javascript" src="js/math3d.js"></script>
+	<script type="text/javascript" src="js/keyboardFocusHack.js"></script>
+	<script type="text/javascript" src="js/updateLogic.js"></script>
+	<script type="text/javascript" src="js/helperFunctions.js"></script>
+	<script type="text/javascript">
+		var ge;
+		google.load("earth", "1");
 
-<div id="googleEarthWindow">
-    This is where the main google earth window will go
-</div>
+		var firstPersonCam;
+		function init() {
+			google.earth.createInstance('googleEarthWindow', initCB, failureCB);
 
-<div id="minimap">
-Minimap in here.
-</div>
+		}
 
-<div id="chatWindow">
-Chatwindow here
-</div>
+		function initCB(instance) {
+			ge = instance;
+			ge.getWindow().setVisibility(true);
+			firstPersonCam = new FirstPersonCam();
+			firstPersonCam.updateCamera();
+			
+			//WalkingSpeed
+            ge.getOptions().setFlyToSpeed(100);
+            ge.getLayerRoot().enableLayerById(ge.LAYER_BUILDINGS, true);
+            ge.getLayerRoot().enableLayerById(ge.LAYER_ROADS, true);
+            
+			keyboardFocusHack(ge);
+			
+			beginUpdateLoop();
+		}
+		
+		function beginUpdateLoop() {
+            gameUpdate();
+            var t = setTimeout("beginUpdateLoop()", REFRESH_RATE);
+        }
+        
+        function gameUpdate(){
+        	firstPersonCam.update();
+        }
 
-<div id="options">
-Options here
-</div>
-    
-    
+		function failureCB(errorCode) {
+		}
+
+
+		google.setOnLoadCallback(init);
+	</script>
+</head>
+<body onunload="GUnload()" onkeydown="return keyDown(event);" onkeyup="return keyUp(event);">
+	<div id="googleEarthWindow"></div>
+</body>
+
